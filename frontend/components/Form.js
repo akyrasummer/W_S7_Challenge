@@ -1,4 +1,3 @@
-import { handleRequest } from 'msw'
 import React, { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 
@@ -19,6 +18,7 @@ const validationSchema = Yup.object().shape({
   size: Yup.string()
   .oneOf(['S', 'M', 'L'], validationErrors.sizeIncorrect)
   .required('Size is required'),
+
   toppings: Yup.array().min(1, 'At least one topping must be selected')
 })
 
@@ -38,8 +38,9 @@ const [formData, setFormData] = useState({
   toppings: []
 })
 
-const [errors, setErrors] = useState({})
-const [isSubmitting, setIsSubmitting] = useState(false)
+const [errors, setErrors] = useState({});
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [successMessage, setSuccessMessage] = useState('');
 
 const handleChange = (e) => {
   const { name, value } = e.target;
@@ -59,49 +60,75 @@ const handleCheckboxChange = (e) => {
   } else {
     setFormData({
       ...formData,
-      toppings: formData.toppings.filter((topping) => topping !== name)
+      toppings: formData.toppings.filter(topping => topping !== name)
     })
-  }
+  } 
 }
+
+
 
 const handleSubmit = (e) => {
   e.preventDefault();
   validationSchema
   .validate(formData, { abortEarly: false })
   .then(() => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     setErrors({});
 
-    setFormData({
+    let message = `Thank you for your order, ${formData.fullName}! Your `;
+    message += `${formData.size === 'S' ? 'small' : formData.size === 'M' ? 'medium' : 'large'} pizza`;
+    if (formData.toppings.length === 0) {
+      message += ' with no toppings';
+    } else {
+      message += ` with ${formData.toppings.length} topping${formData.toppings.length > 1 ? 's' : ''}`;
+    }
+    
+    setSuccessMessage(message);
+
+    setFormData({ // resets form after successful submit
       fullName: '',
       size: '',
-      toppings: []
-    })
+      toppings: [],
+    });
+    setIsSubmitting(false);
   })
   .catch((validationErrors) => {
     setIsSubmitting(false);
-    const errors = {};
+    const newErrors = {};
     validationErrors.inner.forEach((error) => {
-      errors[error.path] = error.message;
+      newErrors[error.path] = error.message;
     })
-    setErrors(errors)
+    setErrors(newErrors);
   })
 }
+
+
+
+useEffect(() => {
+  if (isSubmitting) {
+    const message = formData.toppings.length === 0
+      ? "Thank you for your order! No toppings selected."
+      : `Thank you for your order! Toppings selected: ${formData.toppings.join(", ")}.`;
+    setSuccessMessage(message);
+  }
+}, [isSubmitting, formData.toppings]);
+
+
+
+const isFormValid = formData.fullName.length >= 3 && ['S', 'M', 'L'].includes(formData.size);
 
 
   return (
     <form onSubmit={handleSubmit}>
       <h2>Order Your Pizza</h2>
-      {isSubmitting && <div className='success'>Thank you for your order!</div>}
-      {isSubmitting && formData.toppings.length === 0 && 
-  (<div className="success">Thank you for your order! No toppings selected.</div>)}
-      {!isSubmitting && errors && <div className='failure'>Something went wrong</div>}
-     
-{isSubmitting && formData.toppings.length > 0 && (
-  <div className="success">Thank you for your order! Toppings selected: {formData.toppings.join(', ')}</div>
-)}
-
-
+      
+      {/* Success message */}
+      {successMessage && <div className="success">{successMessage}</div>}
+      
+      {/* Failure message */}
+      {!isSubmitting && Object.keys(errors).length > 0 && (
+        <div className="failure">Something went wrong</div>
+      )}
 
       <div className="input-group">
         <div>
@@ -115,11 +142,10 @@ const handleSubmit = (e) => {
           onChange={handleChange}
           />
         </div>
-        {errors.fullName && (<div className='error'>{errors.fullName}</div>)}
+        {errors.fullName && <div className="error">{errors.fullName}</div>}
       </div>
 
       <div className="input-group">
-        <div>
           <label htmlFor="size">Size</label><br />
           <select id="size" name="size" value={formData.size} onChange={handleChange}>
             <option value="">----Choose Size----</option>
@@ -127,8 +153,8 @@ const handleSubmit = (e) => {
             <option value="M">Medium</option>
             <option value="L">Large</option>
           </select>
-        </div>
-        {errors.size && (<div className='error'>{errors.size}</div>)}
+  
+        {errors.size && <div className="error">{errors.size}</div>}
       </div>
 
       <div className="input-group">
@@ -141,18 +167,17 @@ const handleSubmit = (e) => {
         onChange={handleCheckboxChange}
         checked={formData.toppings.includes(topping.text)}
     />
-    {topping.text}<br />
-      </label>
-    ))}
-      
+         {topping.text}<br />
+          </label>
+        ))}
       </div>
-    
-      {errors.toppings && <div className='error'>{errors.toppings}</div>
-      }
-      {/* 👇 Make sure the submit stays disabled until the form validates! */}
-      <input type="submit" 
-      value="Order Pizza" 
-      disabled={!formData.fullName || !formData.size || errors.fullName || errors.size}/>
+
+      <input 
+        type="submit" 
+        value="Order Pizza" 
+        disabled={!isFormValid} 
+      />
     </form>
-  )
+  );
 }
+
