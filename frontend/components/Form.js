@@ -157,16 +157,16 @@ export default function Form() {
       )}
       </div>
 
-      <div className="toppings-group">
+      <div className="input-group">
         {toppings.map((topping) => (
           <label key={topping.topping_id}>
             <input
-              name={topping.name}
+              name={topping.text}
               type="checkbox"
               onChange={handleCheckboxChange}
-              checked={formData.toppings.includes(topping.name)}
+              checked={formData.toppings.includes(topping.text)}
             />
-            {topping.name}
+            {topping.text}
           </label>
         ))}
       </div>
