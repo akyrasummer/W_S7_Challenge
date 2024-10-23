@@ -1,19 +1,19 @@
 import React from 'react'
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { NavLink, Routes, Route } from 'react-router-dom'
 import Home from './Home'
 import Form from './Form'
 
 function App() {
   return (
     <div id="app">
-      <nav>
-        <NavLink to="/" exact activeClassName="active">
-        Home
+      <nav><NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Home
         </NavLink>
-        <NavLink to="/order" activeClassName="active">
-        Order
+        <NavLink to="/order" className={({ isActive }) => (isActive ? 'active' : '')}>
+          Order
         </NavLink>
       </nav>
+      
       
       <Routes>
         <Route path="/" element={<Home />} />

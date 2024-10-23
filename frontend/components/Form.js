@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as Yup from 'yup';
 
 const validationErrors = {
@@ -13,7 +13,7 @@ const validationSchema = Yup.object().shape({
     .max(20, validationErrors.fullNameTooLong)
     .required('Full name is required'),
 
-    size: Yup.string()
+  size: Yup.string()
     .oneOf(['S', 'M', 'L'], validationErrors.sizeIncorrect)
     .required('Size is required')
 
@@ -24,7 +24,7 @@ const toppings = [
   { topping_id: '2', text: 'Green Peppers' },
   { topping_id: '3', text: 'Pineapple' },
   { topping_id: '4', text: 'Mushrooms' },
-  { topping_id: '5', text: 'Ham' },
+  { topping_id: '5', text: 'Ham' }
 ];
 
 export default function Form() {
@@ -35,7 +35,7 @@ export default function Form() {
   });
 
   const [errors, setErrors] = useState({});
-const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
@@ -44,7 +44,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       ...formData,
       [name]: value,
     });
+
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: undefined,
+      });
+    }
   };
+
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
@@ -64,19 +72,23 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrors({});
+
     try {
       await validationSchema.validate(formData, { abortEarly: false });
 
-      let message = `Thank you for your order, ${formData.fullName}! Your`;
-      message += `${formData.size === 'S' ? ' small' : formData.size === 'M' ? ' medium' : ' large'} pizza`;
-
+      let message = `Thank you for your order, ${formData.fullName}! Your ${formData.size === 'S' ? 'small' : formData.size === 'M' ? 'medium' : 'large'} pizza with`;
+     
       if (formData.toppings.length === 0) {
-        message += ` with no toppings is on the way.`;
+        message += ` no toppings is on the way.`;
+      } else if (formData.toppings.length === 1) {
+        message += ` 1 topping is on the way.`;
       } else {
-        message += ` with ${formData.toppings.join(', ')} is on the way.`;
+        message += ` ${formData.toppings.length} toppings is on the way.`;
       }
 
       setSuccessMessage(message);
+
       // Reset form after successful submission
       setFormData({
         fullName: '',
@@ -97,18 +109,20 @@ const [isSubmitting, setIsSubmitting] = useState(false);
     }
   };
 
-  const isFormValid = formData.fullName.length >= 3 && ['S', 'M', 'L'].includes(formData.size);
+  useEffect(() => {
+
+  }, [successMessage]);
+
+  const isFormValid = formData.fullName.trim().length >= 3 && ['S', 'M', 'L'].includes(formData.size);
 
   return (
     <form onSubmit={handleSubmit}>
       <h2>Order Your Pizza</h2>
 
       {successMessage && <div className="success-message">{successMessage}</div>}
-      {errors.fullName && <div className="error-message">{errors.fullName}</div>}
-
 
       <div className="input-group">
-        <label htmlFor="fullName">Full Name</label><br />
+        <label htmlFor="fullName">Full Name</label>
         <input
           placeholder="Type full name"
           id="fullName"
@@ -117,10 +131,16 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           value={formData.fullName}
           onChange={handleChange}
         />
+        {errors.fullName && (
+          <div className="error-message">{errors.fullName}</div>
+)}
       </div>
-      {errors.size && <div className="error-message">{errors.size}</div>}
+
+
+
+
       <div className="input-group">
-        <label htmlFor="size">Size</label><br />
+        <label htmlFor="size">Size</label>
         <select
           id="size"
           name="size"
@@ -132,26 +152,29 @@ const [isSubmitting, setIsSubmitting] = useState(false);
           <option value="M">Medium</option>
           <option value="L">Large</option>
         </select>
+        {errors.size && ( <div className="error-message">{errors.size}</div>
+        
+      )}
       </div>
-      <div className='input-group'>
-        <label>Toppings</label><br />
+
+      <div className="toppings-group">
         {toppings.map((topping) => (
           <label key={topping.topping_id}>
             <input
-              name={topping.text}
+              name={topping.name}
               type="checkbox"
               onChange={handleCheckboxChange}
-              checked={formData.toppings.includes(topping.text)}
+              checked={formData.toppings.includes(topping.name)}
             />
-            {topping.text}<br />
+            {topping.name}
           </label>
         ))}
-        <input
-          type="submit"
-          value="Order Pizza"
-          disabled={isSubmitting || !isFormValid}
-        />
       </div>
+      <input
+        type="submit"
+        value="Submit"
+        disabled={isSubmitting || !isFormValid}
+      />
     </form>
   );
 }
