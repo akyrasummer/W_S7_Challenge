@@ -16,7 +16,6 @@ const validationSchema = Yup.object().shape({
   size: Yup.string()
     .oneOf(['S', 'M', 'L'], validationErrors.sizeIncorrect)
     .required('Size is required')
-
 });
 
 const toppings = [
@@ -25,84 +24,56 @@ const toppings = [
   { topping_id: '3', text: 'Pineapple' },
   { topping_id: '4', text: 'Mushrooms' },
   { topping_id: '5', text: 'Ham' }
-]
-
+];
 
 export default function Form() {
   const [formData, setFormData] = useState({
     fullName: '',
     size: '',
-    toppings: []
+    toppings: [],
   });
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  const validateField = async (field, value) => {
+    const trimmedValue = value.trim();
+    try {
+      await validationSchema.validateAt(field, { ...formData, [field]: trimmedValue });
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [field]: undefined,
+      }));
+    } catch (err) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [field]: err.message,
+      }));
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-  
+
     // Update form data
-    setFormData({
-      ...formData,
+    setFormData((prevData) => ({
+      ...prevData,
       [name]: value,
-    });
-  
-    // Add a small delay to ensure validation runs after user interaction
-    setTimeout(() => {
-      // Perform real-time validation
-      if (name === 'fullName') {
-        if (value.length < 3) {
-          setErrors((prevErrors) => ({
-            ...prevErrors,
-            fullName: validationErrors.fullNameTooShort,
-          }));
-        } else if (value.length > 20) {
-          setErrors((prevErrors) => ({
-            ...prevErrors,
-            fullName: validationErrors.fullNameTooLong,
-          }));
-        } else {
-          // Clear the fullName error if it passes validation
-          setErrors((prevErrors) => ({
-            ...prevErrors,
-            fullName: undefined,
-          }));
-        }
-      } else {
-        // For other fields, validate using Yup
-        validationSchema
-          .validateAt(name, { ...formData, [name]: value })
-          .then(() => {
-            setErrors((prevErrors) => ({
-              ...prevErrors,
-              [name]: undefined,
-            }));
-          })
-          .catch((err) => {
-            setErrors((prevErrors) => ({
-              ...prevErrors,
-              [name]: err.message,
-            }));
-          });
-      }
-    }, 100);  // Adjust delay time if necessary
+    }));
+
+    // Validate fields on change
+    validateField(name, value);
   };
-  
-  
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    if (checked) {
-      setFormData({
-        ...formData,
-        toppings: [...formData.toppings, name]
-      });
-    } else {
-      setFormData({
-        ...formData,
-        toppings: formData.toppings.filter((topping) => topping !== name)
-      });
-    }
+    setFormData((prevData) => ({
+      ...prevData,
+      toppings: checked
+        ? [...prevData.toppings, name]
+        : prevData.toppings.filter((topping) => topping !== name),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -111,7 +82,7 @@ export default function Form() {
     setErrors({});
 
     try {
-      // Check for any remaining errors before submission
+      // Validate the entire form before submission
       await validationSchema.validate(formData, { abortEarly: false });
 
       // Success message
@@ -119,13 +90,9 @@ export default function Form() {
         formData.size === 'S' ? 'small' : formData.size === 'M' ? 'medium' : 'large'
       } pizza with`;
 
-      if (formData.toppings.length === 0) {
-        message += ` no toppings is on the way.`;
-      } else if (formData.toppings.length === 1) {
-        message += ` 1 topping is on the way.`;
-      } else {
-        message += ` ${formData.toppings.length} toppings is on the way.`;
-      }
+      message += formData.toppings.length === 0
+        ? ' no toppings is on the way.'
+        : ` ${formData.toppings.length} toppings is on the way.`;
 
       setSuccessMessage(message);
 
@@ -148,7 +115,7 @@ export default function Form() {
       setIsSubmitting(false);
     }
   };
-
+  
   const isFormValid = formData.fullName.trim().length >= 3 && ['S', 'M', 'L'].includes(formData.size);
 
   return (
