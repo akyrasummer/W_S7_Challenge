@@ -25,7 +25,8 @@ const toppings = [
   { topping_id: '3', text: 'Pineapple' },
   { topping_id: '4', text: 'Mushrooms' },
   { topping_id: '5', text: 'Ham' }
-];
+]
+
 
 export default function Form() {
   const [formData, setFormData] = useState({
@@ -33,26 +34,61 @@ export default function Form() {
     size: '',
     toppings: []
   });
-
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+  
+    // Update form data
     setFormData({
       ...formData,
       [name]: value,
     });
-
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: undefined,
-      });
-    }
+  
+    // Add a small delay to ensure validation runs after user interaction
+    setTimeout(() => {
+      // Perform real-time validation
+      if (name === 'fullName') {
+        if (value.length < 3) {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            fullName: validationErrors.fullNameTooShort,
+          }));
+        } else if (value.length > 20) {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            fullName: validationErrors.fullNameTooLong,
+          }));
+        } else {
+          // Clear the fullName error if it passes validation
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            fullName: undefined,
+          }));
+        }
+      } else {
+        // For other fields, validate using Yup
+        validationSchema
+          .validateAt(name, { ...formData, [name]: value })
+          .then(() => {
+            setErrors((prevErrors) => ({
+              ...prevErrors,
+              [name]: undefined,
+            }));
+          })
+          .catch((err) => {
+            setErrors((prevErrors) => ({
+              ...prevErrors,
+              [name]: err.message,
+            }));
+          });
+      }
+    }, 100);  // Adjust delay time if necessary
   };
-
+  
+  
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
@@ -75,10 +111,14 @@ export default function Form() {
     setErrors({});
 
     try {
+      // Check for any remaining errors before submission
       await validationSchema.validate(formData, { abortEarly: false });
 
-      let message = `Thank you for your order, ${formData.fullName}! Your ${formData.size === 'S' ? ' small' : formData.size === 'M' ? 'medium' : 'large'} pizza with`;
-     
+      // Success message
+      let message = `Thank you for your order, ${formData.fullName}! Your ${
+        formData.size === 'S' ? 'small' : formData.size === 'M' ? 'medium' : 'large'
+      } pizza with`;
+
       if (formData.toppings.length === 0) {
         message += ` no toppings is on the way.`;
       } else if (formData.toppings.length === 1) {
@@ -109,10 +149,6 @@ export default function Form() {
     }
   };
 
-  useEffect(() => {
-
-  }, [successMessage]);
-
   const isFormValid = formData.fullName.trim().length >= 3 && ['S', 'M', 'L'].includes(formData.size);
 
   return (
@@ -133,11 +169,8 @@ export default function Form() {
         />
         {errors.fullName && (
           <div className="error-message">{errors.fullName}</div>
-)}
+        )}
       </div>
-
-
-
 
       <div className="input-group">
         <label htmlFor="size">Size</label>
@@ -152,9 +185,9 @@ export default function Form() {
           <option value="M">Medium</option>
           <option value="L">Large</option>
         </select>
-        {errors.size && ( <div className="error-message">{errors.size}</div>
-        
-      )}
+        {errors.size && (
+          <div className="error-message">{errors.size}</div>
+        )}
       </div>
 
       <div className="input-group">
@@ -170,6 +203,7 @@ export default function Form() {
           </label>
         ))}
       </div>
+
       <input
         type="submit"
         value="Submit"
