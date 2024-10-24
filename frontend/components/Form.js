@@ -77,7 +77,7 @@ export default function Form() {
     try {
       await validationSchema.validate(formData, { abortEarly: false });
 
-      let message = `Thank you for your order, ${formData.fullName}! Your ${formData.size === 'S' ? 'small' : formData.size === 'M' ? 'medium' : 'large'} pizza with`;
+      let message = `Thank you for your order, ${formData.fullName}! Your ${formData.size === 'S' ? ' small' : formData.size === 'M' ? 'medium' : 'large'} pizza with`;
      
       if (formData.toppings.length === 0) {
         message += ` no toppings is on the way.`;
